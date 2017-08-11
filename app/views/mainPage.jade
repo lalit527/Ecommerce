@@ -1,0 +1,16 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge,chrome=1')
+    title Signup Form
+  body
+    section.container
+      for x in product
+
+        P #{x.productName}
+        P #{x.model}
+        P #{x.brand}
+        P #{x.sellingPrice}
+        p
+          a(href='http://localhost:3000/main/details/'+x.id) details

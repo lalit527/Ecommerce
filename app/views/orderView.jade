@@ -1,0 +1,29 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    meta(http-equiv='X-UA-Compatible', content='IE=edge,chrome=1')
+    title Signup Form
+
+block content
+  h1= title
+  for x in order
+    p #{x}
+    p #{x.purchasedOn}
+    p #{x.status}
+    p #{x.deliveryAddess}
+    p #{x.paymentMode}
+    p #{x.price}
+    p Items
+    for i in x.items
+      p #{i.productName}
+      p #{i.model}
+      p #{i.brand}
+      p #{i.sellingPrice}
+      p #{i.productStatus}
+      p
+      form(method='post', action='http://localhost:3000/main/cart/cancel/item/'+i.id+'/order/'+x._id)
+          input(type='submit', name='', value='cancel item')
+    p  
+    form(method='post', action='http://localhost:3000/main/cart/cancel/order/'+x._id)
+          input(type='submit', name='', value='cancel order')    

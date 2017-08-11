@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  h1= title
+  p Hi #{supplier.firstName}
+  p Your email is #{supplier.email}
+  p Your mobile number is #{supplier.mobileNumber}
+  p
+      a(href='http://localhost:3000/supplier/logout') logout
+  p
+      a(href='http://localhost:3000/product/create/screen') create items
+  p
+      a(href='http://localhost:3000/product/products') my items      
+     
+        
