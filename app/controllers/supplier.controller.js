@@ -5,23 +5,10 @@ var supplierRouter = express.Router();
 var supplierModel = mongoose.model('Supplier');
 var responseGenerator = require('./../../library/responseGenerator');
 var auth = require("./../../middlewares/auth");
-var nodemailer = require("nodemailer");
-var mailer = require('express-mailer');
-var transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'testnode527@gmail.com',
-    pass: 'gmail98765'
-  }
-});
+var randomString = require('./../../library/randomString');
 
-var randomString = function(length, chars) {
-            var result = '';
-            for (var i = length; i > 0; --i) 
-                result += chars[Math.floor(Math.random() * chars.length)];
-            return result;
-}
-var rString = randomString(12, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+
 
 module.exports.controllerFunction = function(app){
 
@@ -61,7 +48,7 @@ module.exports.controllerFunction = function(app){
     });//end logout
    
     
-   supplierRouter.post('/newpassword',function(req,res){
+   supplierRouter.post('/newpassword', auth.validSupplier, function(req,res){
       /*if(req.body.email == "") {
           res.send("Error: Email & Subject should not blank");
           return false;
@@ -77,30 +64,19 @@ module.exports.controllerFunction = function(app){
         res.send("Email has been sent successfully"); */
         
         
-        
+        var rString = randomString.randomStringGenerator(12);
         supplierModel.findOneAndUpdate({'email': req.body.email}, {'forgotPass': rString}, function(err, response){
             if(err){
                 var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
                 res.send(myResponse);
             }
             else{
-                var mailOptions = {
-                  from: 'ensemble@no-reply.com',
-                  to: req.body.email,
-                  subject: 'Sending Email using Node.js',
-                  text: '<h2>Follow this link to reset your password.</h2><a href="http://localhost:3000/supplier/generateNewPassword/screen/'+rString+'/user/'+req.body.email+'">Click Here</a>'
-                };
-
-                transporter.sendMail(mailOptions, function(error, info){
-                  if (error) {
-                    console.log(error);
-                    res.send(error);
-                  } else {
-                    console.log('Email sent: ' + info.response);
-                    res.send('Email sent: ' + info.response);
-                  }
-                }); 
-                }
+                var recepient = req.body.email;
+                var text = '<h2>Follow this link to reset your password.</h2><a href="http://localhost:3000/supplier/generateNewPassword/screen/'+rString+'/user/'+req.body.email+'">Click Here</a>';
+                var mailResponse = mailer.mailFunc(recepient, text, function(mailResponse){
+                  res.send(mailResponse);
+                });
+            }
 
         });
 
@@ -111,8 +87,8 @@ module.exports.controllerFunction = function(app){
    supplierRouter.post('/updatepassword/:id/:userEmail', function(req, res){
        supplierModel.findOneAndUpdate({$and:[{'email': req.params.userEmail}, {'forgotPass': req.params.id}]}, {'password': req.body.password}, function(err, response){
         if(err){
-            console.log('An error occured while retrieving all blogs. Error:-'+err);
-            res.send(err);
+            var myResponse = responseGenerator.generate(true,"some error occured. please recheck the link sent in  email"+err,500,null);
+            res.send(myResponse);
           }else{
             
             res.send('success');

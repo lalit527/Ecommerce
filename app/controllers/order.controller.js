@@ -14,8 +14,9 @@ module.exports.controllerFunction = function(app){
     mainRouter.get('/all', function(req, res){
         allProduct.find(function(err, result){
           if(err){
-            console.log('An error occured while retrieving all blogs. Error:-'+err);
-            res.send(err);
+            console.log('An error occured while showing all products. Error:-'+err);
+            var myResponse = responseGenerator.generate(true,"some error occured"+err,500,null);
+            res.send(myResponse);
           }else{
             res.render('mainPage',{product:result});
           }
@@ -27,11 +28,13 @@ module.exports.controllerFunction = function(app){
        allProduct.findOne({'_id':req.params.id}, function(err, foundProduct){
           //console.log(req.params.id);
           if(err){
-                var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                console.log('An error occured while showing details of a product. Error:-'+err);
+                var myResponse = responseGenerator.generate(true,"some error has occured. Try Again"+err,500,null);
                 res.send(myResponse);
             }
             else if(foundProduct==null || foundProduct==undefined || foundProduct.productName==undefined){
                 console.log(foundProduct);
+                console.log('Details for this product is not available.'+req.params.id);
                 var myResponse = responseGenerator.generate(true,"product not found",404,null);
                 //res.send(myResponse);
                 res.render('error', {
@@ -65,13 +68,13 @@ module.exports.controllerFunction = function(app){
           }
         });*/
         allProduct.findOne({'_id':req.params.id}, function(err, foundProduct){
-            console.log(req.params.id);
             if(err){
-                  var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                  var myResponse = responseGenerator.generate(true,"some error occured. Try again"+err,500,null);
                   res.send(myResponse);
               }
               else if(foundProduct==null || foundProduct==undefined || foundProduct.productName==undefined){
                   console.log(foundProduct);
+                  console.log('Cant be added to cart as Details for this product is not available.'+req.params.id);
                   var myResponse = responseGenerator.generate(true,"product not found",404,null);
                   //res.send(myResponse);
                   res.render('error', {
@@ -80,6 +83,7 @@ module.exports.controllerFunction = function(app){
                   });
 
               }else if(foundProduct.status != 'available'){
+                 console.log('Cant be added to cart as product is out of stock.'+req.params.id);
                  var myResponse = responseGenerator.generate(true,"product out of stock",404,null);
                   //res.send(myResponse);
                   res.render('error', {
@@ -94,11 +98,9 @@ module.exports.controllerFunction = function(app){
                     });
                     newCartItem.save(function(err){
                        if(err){
-
+                               console.log('Error occured while adding item to the cart. Error:-'+err);
                                var myResponse = responseGenerator.generate(true,err,500,null);
                                res.send(myResponse);
-                              
-
                             }
                             else{
                                 res.redirect('/main/cart/all');
@@ -114,21 +116,21 @@ module.exports.controllerFunction = function(app){
      mainRouter.get('/cart/all', auth.checkLogin, function(req, res){
         allCart.find({$and:[{'user.id':req.session.user._id},{'items': {$exists : true}}]},  function(err, result){
           if(err){
-            console.log('An error occured while retrieving all blogs. Error:-'+err);
-            res.send(err);
+            console.log('An error occured while retrieving all items in the card. Error:-'+err);
+            var myResponse = responseGenerator.generate(true,'An error occured. Please try again.' ,500,null);
+            res.send(myResponse);
           }else{
-            //console.log(result);
-            var arr = Object.keys(result);
             res.render('cartView',{product:result});
           }
        });
     });
   
    mainRouter.post('/cart/delete/:id', auth.checkLogin, function(req, res){
-      allCart.remove({'_id':req.params.id}, function(err, result){
+      allCart.remove({$and:[{'user.id':req.session.user._id},{'_id':req.params.id}]}, function(err, result){
           if(err){
-            console.log('An error occured while deleting product.'+req.params.productId+' Error:-'+err);
-            res.send(err);
+            console.log('An error occured while deleting product in the cart.'+req.params.productId+' Error:-'+err);
+            var myResponse = responseGenerator.generate(true,'An error occured. Please try again.' ,500,null);
+            res.send(myResponse);
           }else{
 
             res.redirect('/main/cart/all');
@@ -139,9 +141,13 @@ module.exports.controllerFunction = function(app){
    mainRouter.post('/order/add', auth.checkLogin,function(req, res){
       allCart.find({$and:[{'user.id':req.session.user._id},{'items': {$exists : true}}]}, function(err, foundOrder){
          if(err){
-            console.log('An error occured while retrieving all blogs. Error:-'+err);
-            res.send(err);
+            console.log('An error occured while adding items in the card. Error:-'+err);
+            var myResponse = responseGenerator.generate(true,'An error occured. Please try again.' ,500,null);
+            res.send(myResponse);
           }else if(foundOrder == null || foundOrder.length <= 0){
+            console.log('An error occured while adding items in the card. Error:-'+err);
+            var myResponse = responseGenerator.generate(true,'No Item in the cart. Please add item to the Cart.' ,500,null);
+            res.send(myResponse);
             res.send('add items to the cart');
           }else{
             var userDetail = {id   : req.session.user._id,
@@ -176,17 +182,20 @@ module.exports.controllerFunction = function(app){
             });
             orderItems.save(function(err){
               if(err){
-                var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                console.log('some error occured while ordering items from the cart. ERR:-'+err);
+                var myResponse = responseGenerator.generate(true,"some error occured"+err,500,null);
                 res.send(myResponse);
               }else{
                  allCart.remove({$and:[{'user.id':req.session.user._id},{'items': {$exists : true}}]}, function(err, foundOrder){
                         if(err){
-                          var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                          console.log('some error occured while removing items from the cart. ERR:-'+err);
+                          var myResponse = responseGenerator.generate(true,"some error occured"+err,500,null);
                           res.send(myResponse);
                         }else{
                             allProduct.update({'_id': {$in: itemId}}, {'status': 'sold'}, {multi: true}, function(err, result){  
                                 if(err){
-                                   var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                                   console.log('some error occured while changing status of item from available to sold. ERR:-'+err);
+                                   var myResponse = responseGenerator.generate(true,"some error occured"+err,500,null);
                                    res.send(myResponse);
                                 }else{
                                   res.redirect('/main/order/all');
@@ -206,7 +215,8 @@ module.exports.controllerFunction = function(app){
    mainRouter.get('/order/all', auth.checkLogin, function(req, res){
       allOrder.find({'user.id':req.session.user._id}, null, {sort: {purchasedOn: -1}}, function(err, foundOrder){
             if(err){
-                var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                console.log('some error occured while checking order. ERR:-'+err);
+                var myResponse = responseGenerator.generate(true,"some error occured"+err,500,null);
                 res.send(myResponse);
             }
             else if(foundOrder==null || foundOrder==undefined){
@@ -225,38 +235,38 @@ module.exports.controllerFunction = function(app){
       });
    });
 
-   mainRouter.post('/cart/cancel/item/:itemId/order/:orderId', auth.checkLogin, function(req, res){
+   /*mainRouter.post('/cart/cancel/item/:itemId/order/:orderId', auth.checkLogin, function(req, res){
 
        allOrder.findOneAndUpdate({$and:[{'user.id':req.session.user._id},{'_id': req.params.orderId}, {"items.id": req.params.itemId} ]}, {'$set': {
                                   'items.$.productStatus': 'Cancelled'
                               }}, function(err, response){
                                 console.log(req.params.itemId);
            if(err){
-            console.log('An error occured while retrieving editing blog.'+req.params.blogId+' Error:-'+err);
-            res.send(err);
+             var myResponse = responseGenerator.generate(true,"some error occured while cancelling orders"+err+"Please",500,null);
+             res.send(myResponse);
            }else{
-            console.log('res'+response);
-            res.send(response);
-            //res.redirect('/main/order/all');
+            //res.send(response);
+            res.redirect('/main/order/all');
            }
        });
 
-   });
+   });*/
 
    mainRouter.post('/cart/cancel/order/:orderId', auth.checkLogin, function(req, res){
 
        allOrder.findOneAndUpdate({$and:[{'user.id':req.session.user._id},{'_id': req.params.orderId}]}, {'$set': {'status': 'Cancelled'}}, function(err, response){
            if(err){
-            console.log('An error occured while retrieving editing blog.'+req.params.blogId+' Error:-'+err);
-            res.send(err);
+              console.log('some error occured while cancelling order. ERR:-'+err);
+              var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+              res.send(myResponse);
            }else{
-            console.log('res'+response);
             var itemId = [];
             for(var i=0; i< response.items.length; i++){
                 itemId.push(response.items[i].id);
             }
             allProduct.update({'_id': {$in: itemId}}, {'status': 'available'}, {multi: true}, function(err, result){  
                 if(err){
+                   console.log('some error occured while updating status of order after cancelling. ERR:-'+err);
                    var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
                    res.send(myResponse);
                 }else{

@@ -14,8 +14,8 @@ module.exports.controllerFunction = function(app){
 
     });//end get login screen
 
-    /*productRouter.get('/products/update/:productId',function(req,res){
-        userProduct.findOne({'_id':req.params.productId},function(err,foundProduct){
+    productRouter.get('/products/update/:productId', auth.checkSupplierLogin, auth.validProductStatus, function(req,res){
+        userProduct.findOne({$and: [{'_id':req.params.productId}, {'seller.email':req.session.supplier.email}]},function(err,foundProduct){
             if(err){
                 var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
                 res.send(myResponse);
@@ -37,16 +37,18 @@ module.exports.controllerFunction = function(app){
         });
 
     });//end get login screen
-*/
-    productRouter.post('/products/update/:productId', auth.checkSupplierLogin, function(req,res){
+
+    productRouter.post('/products/update/:productId', auth.checkSupplierLogin, auth.validProductStatus, function(req,res){
         var update = req.body;
-        userProduct.findOneAndUpdate({'_id':req.params.productId},update,function(err,foundProduct){
+        userProduct.findOneAndUpdate({$and: [{'_id':req.params.productId}, {'seller.email':req.session.supplier.email}]},update,function(err,foundProduct){
             if(err){
+                console.log('some error occured while updating item. ERR:-'+err+req.params.productId);
                 var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
                 res.send(myResponse);
             }
             else if(foundProduct==null || foundProduct==undefined || foundProduct.productName==undefined){
                 console.log(foundProduct);
+                console.log('no item for update. ERR:-'+err+' product'+req.params.productId);
                 var myResponse = responseGenerator.generate(true,"product not found",404,null);
                 //res.send(myResponse);
                 res.render('error', {
@@ -64,12 +66,13 @@ module.exports.controllerFunction = function(app){
     });//end get login screen
 
    
-   productRouter.post('/products/delete/:productId', auth.checkSupplierLogin, function(req,res){
+   productRouter.post('/products/delete/:productId', auth.checkSupplierLogin, auth.validProductStatus, function(req,res){
 
-        userProduct.remove({'_id': req.params.productId}, function(err, result){
+        userProduct.remove({$and: [{'_id':req.params.productId}, {'seller.email':req.session.supplier.email}]}, function(err, result){
               if(err){
                 console.log('An error occured while deleting product.'+req.params.productId+' Error:-'+err);
-                res.send(err);
+                var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                res.send(myResponse);
               }else{
 
                 res.redirect('/product/products');
@@ -83,11 +86,13 @@ module.exports.controllerFunction = function(app){
 
         userProduct.findOne({'_id':req.params.productId},function(err,foundProduct){
             if(err){
+                console.log('An error occured while getting product detail.'+req.params.productId+' Error:-'+err);
                 var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
                 res.send(myResponse);
             }
             else if(foundProduct==null || foundProduct==undefined || foundProduct.productName==undefined){
                 console.log(foundProduct);
+                console.log('product detail not found.'+req.params.productId+' Error:-'+err);
                 var myResponse = responseGenerator.generate(true,"product not found",404,null);
                 //res.send(myResponse);
                 res.render('error', {
@@ -108,8 +113,9 @@ module.exports.controllerFunction = function(app){
     productRouter.get('/products', auth.checkSupplierLogin, function(req, res){
         userProduct.find({'seller.email':req.session.supplier.email}, function(err, result){
           if(err){
-            console.log('An error occured while retrieving all blogs. Error:-'+err);
-            res.send(err);
+            console.log('An error occured while retrieving all supplier product. Error:-'+err);
+            var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+            res.send(myResponse);
           }else{
             res.render('product',{product:result});
           }
@@ -139,7 +145,7 @@ module.exports.controllerFunction = function(app){
 
             newProduct.save(function(err){
                 if(err){
-
+                   console.log('some error occured while creating product. ERR:-'+err);
                    var myResponse = responseGenerator.generate(true,err,500,null);
                    res.send(myResponse);
                   
